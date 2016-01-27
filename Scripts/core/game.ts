@@ -5,7 +5,9 @@
 // THREEJS Aliases
 import Scene = THREE.Scene;
 import Renderer = THREE.WebGLRenderer;
+import Camera = THREE.Camera;
 import PerspectiveCamera = THREE.PerspectiveCamera;
+import OrthographicCamera = THREE.OrthographicCamera;
 import BoxGeometry = THREE.BoxGeometry;
 import CubeGeometry = THREE.CubeGeometry;
 import PlaneGeometry = THREE.PlaneGeometry;
@@ -20,6 +22,7 @@ import Object3D = THREE.Object3D;
 import SpotLight = THREE.SpotLight;
 import PointLight = THREE.PointLight;
 import AmbientLight = THREE.AmbientLight;
+import DirectionalLight = THREE.DirectionalLight;
 import Control = objects.Control;
 import GUI = dat.GUI;
 import Color = THREE.Color;
@@ -32,13 +35,14 @@ import gameObject = objects.gameObject;
 
 var scene: Scene;
 var renderer: Renderer;
-var camera: PerspectiveCamera;
+var camera: Camera;
 var axes: AxisHelper;
 var cube: Mesh;
 var plane: Mesh;
 var sphere: Mesh;
 var ambientLight: AmbientLight;
 var spotLight: SpotLight;
+var directionalLight: DirectionalLight;
 var control: Control;
 var gui: GUI;
 var guiScale: GUI;
@@ -47,6 +51,8 @@ var guiRotation: GUI;
 var guiTranslate: GUI;
 var stats: Stats;
 var step: number = 0;
+var planeMaterial: LambertMaterial;
+var planeGeometry: PlaneGeometry;
 var cubeMaterial: LambertMaterial;
 var cubeGeometry: CubeGeometry;
 
@@ -64,42 +70,40 @@ function init() {
     console.log("Added Axis Helper to scene...");
     
     //Add a Plane to the Scene
-    plane = new gameObject(
-        new PlaneGeometry(60, 40, 1, 1),
-        new LambertMaterial({ color: 0xffffff }),
-        0, 0, 0);
-
+    planeGeometry = new THREE.PlaneGeometry(180, 180);
+    planeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    plane = new gameObject(planeGeometry, planeMaterial, 0, 0, 0);
     plane.rotation.x = -0.5 * Math.PI;
-
     scene.add(plane);
     console.log("Added Plane Primitive to scene...");
-     
+
+    cubeMaterial = new LambertMaterial({ color: 0x00ee22 });
+    cubeGeometry = new CubeGeometry(4, 4, 4);
+    for (var row = 0; row < (180 / 5); row++) {
+        for (var col = 0; col < (180 / 5); col++) {
+            var cube = new Mesh(cubeGeometry, cubeMaterial);
+            cube.position.z = -(180 / 2) + 2 + (row * 5);
+            cube.position.x = -(180 / 2) + 2 + (col * 5);
+            cube.position.y = 2;
+            scene.add(cube);
+        }
+    }
+    console.log("Added 36 x 36 Cube Primitives to the Scene");
     
     // Add an AmbientLight to the scene
-    ambientLight = new AmbientLight(0x090909);
+    ambientLight = new AmbientLight(0x292929);
     scene.add(ambientLight);
     console.log("Added an Ambient Light to Scene");
 	
-    // Add a SpotLight to the scene
-    spotLight = new SpotLight(0xffffff);
-    spotLight.position.set(-40, 60, 20);
-    spotLight.castShadow = true;
-    scene.add(spotLight);
-    console.log("Added a SpotLight Light to Scene");
-
-    cubeMaterial = new LambertMaterial({ color: 0x44ff44 });
-    cubeGeometry = new CubeGeometry(5, 8, 3);
-    cube = new Mesh(cubeGeometry, cubeMaterial);
-    cube.position.y = 4;
-    cube.castShadow = true;
-    scene.add(cube);
-    console.log("Added a Cube Primitive to the Scene");
-    
-    
+    // Add a DirectionalLight to the scene
+    directionalLight = new DirectionalLight(0xffffff, 0.7);
+    directionalLight.position.set(-20, 40, 60);
+    scene.add(directionalLight);
+    console.log("Added a Directional Light to Scene");
     
     // add controls
     gui = new GUI();
-    control = new Control(cube);
+    control = new Control();
     addControl(control);
 
     // Add framerate stats
@@ -112,53 +116,18 @@ function init() {
     window.addEventListener('resize', onResize, false);
 }
 
-// Change the Camera Aspect Ration according to Screen Size changes
+// Change the Camera Aspect Ratio according to Screen Size changes
 function onResize(): void {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    if(camera instanceof PerspectiveCamera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+    }
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function addControl(controlObject: Control): void {
-    // Add Scale Folder
-    guiScale = gui.addFolder('scale');
-    guiScale.add(controlObject, 'scaleX', 0, 5);
-    guiScale.add(controlObject, 'scaleY', 0, 5);
-    guiScale.add(controlObject, 'scaleZ', 0, 5);
-
-    // Add Position Folder
-    guiPosition = gui.addFolder('position');
-    var contX = guiPosition.add(controlObject, 'positionX', -10, 10);
-    var contY = guiPosition.add(controlObject, 'positionY', -4, 20);
-    var contZ = guiPosition.add(controlObject, 'positionZ', -10, 10);
-
-    contX.listen();
-    contX.onChange((value) => {
-        cube.position.x = controlObject.positionX;
-    });
-
-    contY.listen();
-    contY.onChange((value) => {
-        cube.position.y = controlObject.positionY;
-    });
-
-    contZ.listen();
-    contZ.onChange((value) => {
-        cube.position.z = controlObject.positionZ;
-    });
-    
-    // Add Rotation Folder
-    guiRotation = gui.addFolder('rotation');
-    guiRotation.add(controlObject,'rotationX',-4, 4);
-    guiRotation.add(controlObject,'rotationY',-4, 4);
-    guiRotation.add(controlObject,'rotationZ',-4, 4);
-    
-    // Add Translate Folder
-    guiTranslate = gui.addFolder('translate');
-    guiTranslate.add(controlObject,'translateX',-10, 10);
-    guiTranslate.add(controlObject,'translateY',-10, 10);
-    guiTranslate.add(controlObject,'translateZ',-10, 10);
-    guiTranslate.add(controlObject,'translate');
+   gui.add(controlObject, 'switchCamera');
+   gui.add(controlObject, 'perspective').listen();
 }
 
 // Add Stats Object to the Scene
@@ -174,13 +143,6 @@ function addStatsObject() {
 // Setup main game loop
 function gameLoop(): void {
     stats.update();
-
-    cube.rotation.x=control.rotationX;
-    cube.rotation.y=control.rotationY;
-    cube.rotation.z=control.rotationZ;
-    
-    cube.scale.set(control.scaleX, control.scaleY, control.scaleZ);
-
 
     // render using requestAnimationFrame
     requestAnimationFrame(gameLoop);
@@ -201,9 +163,9 @@ function setupRenderer(): void {
 // Setup main camera for the scene
 function setupCamera(): void {
     camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.x = -30;
-    camera.position.y = 40;
-    camera.position.z = 30;
+    camera.position.x = 120;
+    camera.position.y = 60;
+    camera.position.z = 180;
     camera.lookAt(scene.position);
-    console.log("Finished setting up Camera...");
+    console.log("Finished setting up Initial Camera...");
 }

@@ -4,31 +4,28 @@ var objects;
     // CONTROL CLASS ++++++++++++++++++++++++++++++++++++++++++
     var Control = (function () {
         // CONSTRUCTOR ++++++++++++++++++++++++++++++++++++++++
-        function Control(mesh) {
+        function Control() {
             //PUBLIC INSTANCE VARIABLES +++++++++++++++++++++++++++
-            this.scaleX = 1;
-            this.scaleY = 1;
-            this.scaleZ = 1;
-            this.positionX = 0;
-            this.positionY = 4;
-            this.positionZ = 0;
-            this.rotationX = 0;
-            this.rotationY = 0;
-            this.rotationZ = 0;
-            this.scale = 1;
-            this.translateX = 0;
-            this.translateY = 0;
-            this.translateZ = 0;
-            this.mesh = mesh;
+            this.perspective = "Perspective";
         }
         //PUBLIC METHODS +++++++++++++++++++++++++++++++++++++++
-        Control.prototype.translate = function () {
-            this.mesh.translateX(this.translateX);
-            this.mesh.translateY(this.translateY);
-            this.mesh.translateZ(this.translateZ);
-            this.positionX = this.mesh.position.x;
-            this.positionY = this.mesh.position.y;
-            this.positionZ = this.mesh.position.z;
+        Control.prototype.switchCamera = function () {
+            if (camera instanceof PerspectiveCamera) {
+                camera = new OrthographicCamera(window.innerWidth / -16, window.innerWidth / 16, window.innerHeight / 16, window.innerHeight / -16, -200, 500);
+                camera.position.x = 3;
+                camera.position.y = 1;
+                camera.position.z = 3;
+                camera.lookAt(scene.position);
+                this.perspective = "Orthographic";
+            }
+            else {
+                camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.x = 120;
+                camera.position.y = 60;
+                camera.position.z = 180;
+                camera.lookAt(scene.position);
+                this.perspective = "Perspective";
+            }
         };
         return Control;
     })();
